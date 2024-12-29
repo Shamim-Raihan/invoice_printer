@@ -393,7 +393,10 @@ import 'dart:io';
 // import 'package:esc_pos_utils_plus/esc_pos_utils.dart';
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_pos_printer_platform_image_3/flutter_pos_printer_platform_image_3.dart';
+import 'package:image/image.dart' as img;
+import 'package:image/image.dart';
 
 void main() {
   runApp(const MyApp());
@@ -553,14 +556,77 @@ class _MyAppState extends State<MyApp> {
     // Xprinter XP-N160I
     final profile = await CapabilityProfile.load(name: 'XP-N160I');
     // PaperSize.mm80 or PaperSize.mm58
-    final generator = Generator(PaperSize.mm80, profile);
+    final generator = Generator(PaperSize.mm58, profile);
     bytes += generator.setGlobalCodeTable('CP1252');
     bytes += generator.text('Test Print',
         styles: const PosStyles(align: PosAlign.center));
     bytes += generator.text('Product 1');
     bytes += generator.text('Product 2');
 
+    // Add logo/image
+    final ByteData data = await rootBundle.load('assets/images/app_icon_2.png');
+    final Uint8List imageBytes = data.buffer.asUint8List();
+    final img.Image? image = decodeImage(imageBytes);
+
+    if (image != null) {
+      // Print the image
+      // Parameters: image, align
+      bytes += generator.image(image, align: PosAlign.center);
+    }
+
+    bytes += generator.row([
+      PosColumn(
+        text: 'col3 adfg sd fas df asdf ads fa f asdf a',
+        width: 4,
+        styles: PosStyles(align: PosAlign.center, underline: true),
+      ),
+      PosColumn(
+        text: 'col3 adfg sd fas df asdf ads fa f asdf a',
+        width: 4,
+        styles: PosStyles(align: PosAlign.center, underline: true),
+      ),
+      PosColumn(
+        text: 'col3 adfg sd fas df asdf ads fa f asdf a',
+        width: 4,
+        styles: PosStyles(align: PosAlign.center, underline: true),
+      ),
+    ]);
+
+    final List<int> barData = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 4];
+    bytes += generator.barcode(Barcode.upcA(barData));
+    bytes += generator.qrcode('example.com', size: QRSize.size8);
+
     _printEscPos(bytes, generator);
+  }
+  // Future _printReceiveTest() async {
+  //   // Initialize the bytes list as a growable list
+  //   List<int> bytes = [];
+
+  //   // Xprinter XP-N160I
+  //   final profile = await CapabilityProfile.load(name: 'XP-N160I');
+  //   // PaperSize.mm80 or PaperSize.mm58
+  //   final generator = Generator(PaperSize.mm80, profile);
+  //   bytes.addAll(generator.setGlobalCodeTable('CP1252'));
+
+  //   // Adding text
+  //   bytes.addAll(generator.text('Test Print',
+  //       styles: const PosStyles(align: PosAlign.center)));
+  //   bytes.addAll(generator.text('Product 1'));
+  //   bytes.addAll(generator.text('Product 2'));
+
+  //   // Adding an image
+  //   final img.Image image =
+  //       img.decodeImage(await _loadImageBytes('assets/images/app_icon.png'))!;
+  //   final resizedImage =
+  //       img.copyResize(image, width: 250);
+  //   bytes.addAll(generator.imageRaster(resizedImage));
+
+  //   _printEscPos(bytes, generator);
+  // }
+
+  Future<Uint8List> _loadImageBytes(String path) async {
+    final ByteData data = await rootBundle.load(path);
+    return data.buffer.asUint8List();
   }
 
   /// print ticket
